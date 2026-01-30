@@ -1,0 +1,13 @@
+Date,Description,Category,Amount
+2023-01-01,Client Payment A,Revenue (Sales),50000
+2023-01-05,Office Rent,Expenses (Rent),2000
+2023-01-10,Software Subscription,Expenses,150
+2023-01-15,Client Payment B,Revenue (Sales),30000
+2023-01-20,Server Costs,Expenses,500
+2023-01-25,Marketing Campaign,Expenses,5000
+2023-02-01,Client Payment C,Revenue,45000
+2023-02-02,Inventory Purchase,Inventory,12000
+2023-02-05,Loan Repayment,Loan Interest,1500
+2023-02-10,GST Payment,Tax,3000
+2023-02-15,Pending Invoice #101,Accounts Receivable,5000
+2023-02-16,Vendor Bill #404,Accounts Payable,2000

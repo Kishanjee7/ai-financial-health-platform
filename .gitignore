@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node/Frontend
+node_modules/
+dist/
+.DS_Store
+
+# Brain/Artifacts (Agent)
+.gemini/
+.agent/
+
+# Database
+*.db
+*.sqlite3
