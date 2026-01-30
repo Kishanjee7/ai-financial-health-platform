@@ -44,6 +44,8 @@ async def upload_financial_data(
         loan_obligations=security.encrypt_data(metrics["loan_obligations"]),
         tax_compliance=security.encrypt_data(metrics["tax_compliance"]),
         
+        industry=metrics.get("industry", "Unknown"),
+        
         risk_assessment=analysis_result["risk_assessment"], # Open for querying
         credit_score_estimate=analysis_result["credit_score_estimate"],
         recommendations=security.encrypt_data(analysis_result["recommendations"])
@@ -67,6 +69,7 @@ async def get_report(report_id: int, db: Session = Depends(get_db)):
         "id": report.id,
         "filename": report.filename,
         "created_at": report.created_at,
+        "industry": report.industry,
         "risk_assessment": report.risk_assessment,
         "credit_score_estimate": report.credit_score_estimate,
         # Decrypt sensitive fields

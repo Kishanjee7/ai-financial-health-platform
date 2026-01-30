@@ -1,23 +1,73 @@
 import os
 from typing import Dict, Any
 
+import json
+from openai import OpenAI
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 def analyze_financial_health(metrics: Dict[str, Any], language: str = "en") -> Dict[str, Any]:
     """
-    Simulates AI analysis of financial health.
-    In a real app, this would call OpenAI/Claude API with the language parameter.
+    Analyzes financial health using OpenAI if API key is present, otherwise uses fallback logic.
     """
+    if os.getenv("OPENAI_API_KEY"):
+        try:
+            return _analyze_with_llm(metrics, language)
+        except Exception as e:
+            print(f"LLM Error: {e}. Falling back to rule-based logic.")
+            return _analyze_rule_based(metrics, language)
+    else:
+        return _analyze_rule_based(metrics, language)
+
+def _analyze_with_llm(metrics: Dict[str, Any], language: str) -> Dict[str, Any]:
+    # Prune heavy data for the prompt
+    summary_metrics = {k: v for k, v in metrics.items() if k not in ['raw_text']}
+    
+    prompt = f"""
+    You are a financial advisor AI for SMEs. Analyze the following financial data for a {metrics.get('industry', 'General')} business.
+    Output Language: {language} (Ensure all output text is in this language).
+    
+    Data:
+    {json.dumps(summary_metrics, indent=2)}
+    
+    Return a JSON object with this exact structure:
+    {{
+        "risk_assessment": "Low" | "Medium" | "High" (or localized equivalent),
+        "credit_score_estimate": integer (300-900),
+        "recommendations": ["string", "string", "string"],
+        "analysis_summary": "One sentence summary"
+    }}
+    """
+    
+    response = client.chat.completions.create(
+        model="gpt-4o", # or gpt-3.5-turbo if cost is concern
+        messages=[{"role": "system", "content": "You are a helpful financial expert."}, {"role": "user", "content": prompt}],
+        response_format={"type": "json_object"}
+    )
+    
+    content = response.choices[0].message.content
+    return json.loads(content)
+
+def _analyze_rule_based(metrics: Dict[str, Any], language: str) -> Dict[str, Any]:
     revenue = metrics.get('revenue_streams', {}).get('total', 0)
     profit = metrics.get('net_profit', 0)
     inventory = metrics.get('inventory_levels', {}).get('total', 0)
     debt = metrics.get('loan_obligations', {}).get('total', 0)
+    industry = metrics.get('industry', 'General')
     
     # 1. Risk Assessment
     if profit < 0 or debt > (revenue * 0.6):
         risk = "High" if language == "en" else "उच्च (High)"
         score = 550
     elif profit < (revenue * 0.1):
-        risk = "Medium" if language == "en" else "मध्य (Medium)"
-        score = 650
+        # Stricter margin requirements for Services vs Retail
+        threshold = 0.15 if industry == "Services" else 0.05
+        if profit < (revenue * threshold):
+             risk = "Medium" if language == "en" else "मध्य (Medium)"
+             score = 650
+        else:
+             risk = "Low" if language == "en" else "कम (Low)"
+             score = 750
     else:
         risk = "Low" if language == "en" else "कम (Low)"
         score = 750
@@ -25,6 +75,16 @@ def analyze_financial_health(metrics: Dict[str, Any], language: str = "en") -> D
     # 3. Recommendations
     recs = []
     
+    # Industry Specific Advice
+    if language == "en":
+        if industry == "Retail" or industry == "Manufacturing":
+            if inventory > (revenue * 0.4):
+                 recs.append("Inventory levels are high relative to revenue. Optimize stock turnover.")
+        if industry == "Services":
+             recs.append("Focus on client retention and recurring revenue models.")
+        if industry == "Agriculture":
+             recs.append("Review crop insurance and government subsidy options.")
+             
     # English Logic
     if language == "en":
         if inventory > (revenue * 0.3) and revenue > 0:

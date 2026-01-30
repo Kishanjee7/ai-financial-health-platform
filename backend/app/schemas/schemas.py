@@ -30,11 +30,13 @@ class ReportResponse(ReportBase):
     accounts_receivable: Optional[Dict[str, Any]]
     accounts_payable: Optional[Dict[str, Any]]
     inventory_levels: Optional[Dict[str, Any]]
-    loan_obligations: Optional[Dict[str, Any]]
-    tax_compliance: Optional[Dict[str, Any]]
-
-    risk_assessment: Optional[str]
-    credit_score_estimate: Optional[int]
+    loan_obligations: Dict[str, Any]
+    banking_data: Optional[Dict[str, Any]]
+    tax_compliance: Dict[str, Any]
+    
+    industry: str
+    risk_assessment: str
+    credit_score_estimate: int
     recommendations: Optional[List[str]]
 
     class Config:

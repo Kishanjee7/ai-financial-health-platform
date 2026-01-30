@@ -1,10 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { syncBankAccount } from '../services/api';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 const ReportView = ({ report }) => {
     if (!report) return null;
+
+    const [bankingData, setBankingData] = useState(report.banking_data);
+
+    const handleConnectBank = async (provider) => {
+        try {
+            const result = await syncBankAccount(provider, report.id);
+            setBankingData(result.data);
+            alert(`Successfully connected to ${provider}!`);
+        } catch (error) {
+            console.error(error);
+            alert("Failed to connect banking provider.");
+        }
+    };
 
     const {
         revenue_streams, cost_structure, key_metrics,
@@ -28,6 +42,12 @@ const ReportView = ({ report }) => {
         <div className="report-view fade-in">
             {/* High Level Summary */}
             <div className="grid-layout" style={{ marginBottom: '2rem' }}>
+                <div className="card glass-card">
+                    <h3>Industry</h3>
+                    <div className="risk-indicator" style={{ color: 'var(--accent)', fontSize: '1.2rem' }}>
+                        {report.industry || "General"}
+                    </div>
+                </div>
                 <div className="card glass-card">
                     <h3>Risk Level</h3>
                     <div className={`risk-indicator ${risk_assessment === 'Low' ? 'low-risk' : 'high-risk'}`}>
@@ -115,6 +135,60 @@ const ReportView = ({ report }) => {
                     </p>
                 </div>
 
+            </div>
+            {/* Banking Integration */}
+            <div className="card glass-card wide" style={{ marginTop: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3>Banking Integration</h3>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button className="primary-btn" onClick={() => handleConnectBank('Plaid')} style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
+                            Connect Plaid (Mock)
+                        </button>
+                        <button className="primary-btn" onClick={() => handleConnectBank('Stripe')} style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', background: '#6366f1' }}>
+                            Connect Stripe (Mock)
+                        </button>
+                    </div>
+                </div>
+
+                {bankingData ? (
+                    <div>
+                        <div className="stat-row">
+                            <span>Provider:</span>
+                            <span style={{ fontWeight: 'bold' }}>{bankingData.provider}</span>
+                        </div>
+                        <div className="stat-row">
+                            <span>Account Balance:</span>
+                            <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>${bankingData.balance?.toLocaleString()}</span>
+                        </div>
+                        <h4 style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>Recent Transactions</h4>
+                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                                <thead>
+                                    <tr style={{ textAlign: 'left', color: 'var(--text-muted)' }}>
+                                        <th style={{ padding: '0.5rem' }}>Date</th>
+                                        <th style={{ padding: '0.5rem' }}>Description</th>
+                                        <th style={{ padding: '0.5rem', textAlign: 'right' }}>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {bankingData.transactions?.map((tx, i) => (
+                                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <td style={{ padding: '0.5rem' }}>{tx.date}</td>
+                                            <td style={{ padding: '0.5rem' }}>{tx.description}</td>
+                                            <td style={{ padding: '0.5rem', textAlign: 'right', color: tx.amount < 0 ? 'var(--danger)' : 'var(--success)' }}>
+                                                ${tx.amount.toLocaleString()}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ) : (
+                    <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                        No banking data connected. Click a button above to simulate API integration.
+                    </p>
+                )}
             </div>
 
             <style>{`

@@ -8,3 +8,5 @@ pydantic
 python-dotenv
 openai
 openpyxl
+pypdf
+cryptography

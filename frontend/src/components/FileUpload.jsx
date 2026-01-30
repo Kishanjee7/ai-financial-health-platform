@@ -37,7 +37,7 @@ const FileUpload = ({ onUploadSuccess, language = 'en' }) => {
             <input
                 type="file"
                 onChange={handleFileChange}
-                accept=".csv,.xlsx,.xls"
+                accept=".csv,.xlsx,.xls,.pdf"
                 style={{ marginBottom: '1rem', color: 'var(--text-main)' }}
             />
 

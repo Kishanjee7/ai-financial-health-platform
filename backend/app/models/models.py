@@ -36,7 +36,11 @@ class FinancialReport(Base):
     accounts_payable = Column(JSON)
     inventory_levels = Column(JSON)
     loan_obligations = Column(JSON)
-    tax_compliance = Column(JSON)
+    banking_data = Column(JSON) # Transactions/Balance from API
+    tax_compliance = Column(String) # Encrypted JSON
+    
+    # Analysis Metadata
+    industry = Column(String, default="Unknown") # E.g., Retail, Manufacturing, Services
     
     # AI Assessment
     risk_assessment = Column(String) # Low, Medium, High

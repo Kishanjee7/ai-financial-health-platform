@@ -1,5 +1,7 @@
 import pandas as pd
 import io
+import re
+from pypdf import PdfReader
 from fastapi import HTTPException
 from typing import Dict, Any
 
@@ -9,8 +11,34 @@ def parse_file(content: bytes, filename: str) -> pd.DataFrame:
             df = pd.read_csv(io.BytesIO(content))
         elif filename.endswith('.xlsx') or filename.endswith('.xls'):
             df = pd.read_excel(io.BytesIO(content))
+        elif filename.endswith('.pdf'):
+            reader = PdfReader(io.BytesIO(content))
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text() + "\n"
+            
+            # Simple heuristic: Look for lines with Text followed by Number
+            # This is a basic implementation. For complex PDFs, we'd need Tabula or Azure Form Recognizer.
+            data = []
+            for line in text.split('\n'):
+                # Regex to find "Item Name .... 1234.56"
+                match = re.search(r'([a-zA-Z\s]+)[\s:$\-]+([\d,]+\.?\d*)', line)
+                if match:
+                    item, amount_str = match.groups()
+                    try:
+                        amount = float(amount_str.replace(',', ''))
+                        data.append({"Description": item.strip(), "Amount": amount})
+                    except:
+                        pass
+            
+            if not data:
+                # Fallback: Create empty DF if no structured data found
+                df = pd.DataFrame(columns=["Description", "Amount"])
+            else:
+                df = pd.DataFrame(data)
+                
         else:
-            raise HTTPException(status_code=400, detail="Unsupported file format. Please upload CSV or Excel.")
+            raise HTTPException(status_code=400, detail="Unsupported file format. Please upload CSV, Excel, or PDF.")
         
         df = df.dropna(how='all')
         return df
@@ -172,6 +200,27 @@ def extract_financial_metrics(df: pd.DataFrame) -> Dict[str, Any]:
             if matches(col, keywords["tax"]):
                 metrics["tax_compliance"]["total"] += col_total
 
+    # Industry Determination Logic
+    def determine_industry(df_local, text_content=""):
+        combo_text = (text_content + " " + " ".join(df_local.columns.astype(str)) + " " + " ".join(df_local.astype(str).values.flatten())).lower()
+        
+        if any(x in combo_text for x in ["crop", "farm", "seed", "harvest", "agriculture"]):
+            return "Agriculture"
+        if any(x in combo_text for x in ["manufacturing", "factory", "plant", "raw material", "production"]):
+            return "Manufacturing"
+        if any(x in combo_text for x in ["shipping", "freight", "logistics", "transport", "delivery"]):
+            return "Logistics"
+        if any(x in combo_text for x in ["shopify", "stripe", "ecommerce", "online store", "cart"]):
+            return "E-commerce"
+        if any(x in combo_text for x in ["retail", "store", "shop", "inventory", "stock"]):
+            return "Retail"
+        if any(x in combo_text for x in ["consulting", "service", "subscription", "agency", "software"]):
+            return "Services"
+        
+        return "General"
+
+    industry = determine_industry(df)
+    metrics["industry"] = industry
     metrics["net_profit"] = metrics["revenue_streams"]["total"] - metrics["cost_structure"]["total"]
     
     return metrics

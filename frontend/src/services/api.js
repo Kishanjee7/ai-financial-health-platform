@@ -20,4 +20,9 @@ export const uploadFinancialFile = async (file, language = 'en') => {
     return response.data;
 };
 
+export const syncBankAccount = async (provider, reportId) => {
+    const response = await api.post(`/banking/sync/${provider}?report_id=${reportId}`);
+    return response.data;
+};
+
 export default api;
